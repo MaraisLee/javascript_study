@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>로또추첨기</title>
+        <style>
+            .ball {
+                display: inline-block;
+                border: 1px solid black;
+                border-radius: 20px;
+                width: 40px;
+                height: 40px;
+                line-height: 40px;
+                font-size: 20px;
+                text-align: center;
+                margin-right: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <form id="form">
+            <input
+                name="inputName"
+                placeholder="6개의 번호를 쉼표로 구별해서 적어주세요."
+            />
+            <button>추첨</button>
+        </form>
+        <div id="result">추첨 결과는?</div>
+        <div id="bonus">보너스:</div>
+        <script>
+            $result = document.querySelector('#result');
+            $bonus = document.querySelector('#bonus');
+            $form = document.querySelector('#form');
+
+            $form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const string = e.target.inputName.value;
+                if (!string.trim()) {
+                    return alert('숫자를 입력하세요.');
+                }
+                const numbers = string
+                    .split(',')
+                    .map((v) => parseInt(v.trim()));
+                if (numbers.length !== 6) {
+                    return alert('6개 숫자를 입력해주세요.');
+                }
+                const newNumbers = [];
+                numbers.forEach((v) => {
+                    if (!newNumbers.includes(v)) {
+                        newNumbers.push(v);
+                    }
+                });
+                if (newNumbers.length !== 6) {
+                    return alert('중복된 숫자를 입력했습니다.');
+                }
+                if (new Set(numbers).size !== 6) {
+                    return alert('중복된 숫자를 입력했습니다.');
+                }
+                if (numbers.find((v) => v > 45 || v < 1)) {
+                    return alert('1~45 숫자를 입력해주세요.');
+                }
+
+                const candidate = Array(49)
+                    .fill()
+                    .map((v, i) => i + 1);
+                const shuffle = [];
+
+                // #a. for 문 / 몇번 돌려야하는지 정확히 알때는 for, 모를 땐 while(코드가 짧음)
+                /*
+                for (let i = candidate.length; i > 0; i--) {
+                    const random = Math.floor(Math.random() * i);
+                    const spliceArray = candidate.splice(random, 1);splice는 결과값이 배열
+                    const value = spliceArray[0];
+                    shuffle.push(value);
+                }
+                */
+                // #b. while 문
+                while (candidate.length) {
+                    const random = Math.floor(Math.random() * candidate.length);
+                    const spliceArray = candidate.splice(random, 1); //splice는 결과값이 배열
+                    const value = spliceArray[0];
+                    shuffle.push(value);
+                }
+                const winBalls = shuffle.slice(0, 6).sort((a, b) => a - b);
+                const bonusBall = shuffle[6];
+                function drawBalls($parent, value) {
+                    const $ball = document.createElement('div');
+                    $ball.className = 'ball';
+                    $ball.textContent = value;
+                    $parent.appendChild($ball);
+                }
+
+                // #1 이벤트 핸들러가 setTimeout를 만나 미리 백그라운드에 타이머 1초~6초를 등록시켜놓는다. -> 다시 하나씩 호출스택으로 가져와서 실행 (코드를 읽을 때, 아래로 내려갔다가 다시 올라와야 함)
+                // var와 비동기가 만나면 클로저 문제 발생
+                /* 
+                for (let i = 0; i < winBalls.length; i++) {
+                    setTimeout(() => {
+                        // 비동기 함수: 0초일 때, 1-6개의 타이머를 미리 등록 -> 1초뒤에 1번, 2초뒤에 2번
+                        drawBalls($result, winBalls[i]);
+                    }, 1000 * (i + 1));
+                }
+                setTimeout(() => {
+                    drawBalls($bonus, bonusBall);
+                }, 7000);
+                */
+
+                // #2 aysnc await + Promise를 이용해 코드 정리(위에서 쭉 아래로 내려가는 코드)
+                const setTimeoutPromise = (ms) =>
+                    new Promise((resolve, reject) => {
+                        // setTimeout 비동기함수를 Promise로 만들기
+                        setTimeout(resolve, ms);
+                    });
+                for (let i = 0; i < winBalls.length; i++) {
+                    await setTimeoutPromise(1000); // 1초 뒤 1번, 1초 뒤, 2번 ...
+                    drawBalls($result, winBalls[i]);
+                }
+                await setTimeoutPromise(1000);
+                drawBalls($bonus, bonusBall);
+
+                let count = 0;
+                numbers.forEach((i) => {
+                    if (winBalls.includes(i)) {
+                        count += 1;
+                    }
+                });
+                await setTimeoutPromise(0); // 4밀리초 (alert가 보너스 볼보다 먼저 뜨는 오류 해결)
+                if (count === 6) {
+                    alert('1등! 6개 당첨');
+                } else if (count === 5) {
+                    if (numbers.includes(bonusBall)) {
+                        alert('2등! 5개 당첨 + 보너스 볼');
+                    } else {
+                        alert('3등! 5개 당첨');
+                    }
+                } else if (count === 4) {
+                    alert('4등! 4개 당첨');
+                } else {
+                    alert('3개이하로 당첨되었어요. 다시 시도해주세요.');
+                }
+            });
+        </script>
+    </body>
+</html>

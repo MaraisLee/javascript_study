@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>숫자 야구</title>
+    </head>
+    <body>
+        <form id="form">
+            <input type="text" id="input" />
+            <button>확인</button>
+        </form>
+        <div id="logs"></div>
+        <script>
+            $form = document.querySelector('#form');
+            $input = document.querySelector('#input');
+            $logs = document.querySelector('#logs');
+
+            const numbers = [];
+            for (let n = 0; n < 9; n++) {
+                numbers.push(n + 1);
+            }
+
+            const answer = [];
+            for (let n = 0; n < 4; n++) {
+                const index = Math.floor(Math.random() * (numbers.length - n));
+                answer.push(numbers[index]);
+                numbers.splice(index, 1);
+            }
+            console.log(answer);
+
+            const tries = [];
+            function checkInput(input) {
+                if (input.length !== 4) {
+                    return alert('4글자 입력해주세요.');
+                }
+                if (new Set(input).size !== 4) {
+                    return alert('중복되지 않게 입력해주세요.');
+                }
+                if (tries.includes(input)) {
+                    return alert('이미 시도한 값입니다.');
+                }
+                return true;
+            }
+            function defeated() {
+                const msg = document.createTextNode(
+                    `패배! 정답은 ${answer.join('')}`
+                );
+                $logs.appendChild(msg);
+            }
+
+            let out = 0;
+            $form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const value = $input.value;
+                $input.value = '';
+                if (!checkInput(value)) {
+                    return;
+                }
+
+                if (answer.join('') === value) {
+                    $logs.textContent += '홈런!';
+                    return;
+                }
+                if (tries.length >= 9) {
+                    defeated();
+                    return;
+                }
+
+                let strike = 0;
+                let ball = 0;
+
+                answer.forEach((item, idx) => {
+                    const index = value.indexOf(item);
+                    if (index > -1) {
+                        if (index === idx) {
+                            strike += 1;
+                        } else {
+                            ball += 1;
+                        }
+                    }
+                });
+
+                for (let i = 0; i < answer.length; i++) {
+                    const index = value.indexOf(answer[i]);
+                    if (index > -1) {
+                        if (index === i) {
+                            strike += 1;
+                        } else {
+                            ball += 1;
+                        }
+                    }
+                }
+                if (!strike && !ball) {
+                    $logs.append('아웃', document.createElement('br'));
+                    out += 1;
+                    if (out === 3) {
+                        defeated();
+                        return;
+                    }
+                    return;
+                }
+
+                $logs.append(
+                    `${value}: ${strike}strike ${ball}ball`,
+                    document.createElement('br')
+                );
+                tries.push(value);
+            });
+        </script>
+    </body>
+</html>
